@@ -1,0 +1,4 @@
+# Excel temporary lock files created while database.xlsx is open
+~$*
+.DS_Store
+Thumbs.db

@@ -19,7 +19,7 @@ academic-site/
 
 ## Run locally
 
-The site reads `data/database.xlsx`, so serve the folder with a local web server (opening `index.html` by double-click cannot load the Excel file):
+The site reads `data/database.xlsx`. If you double-click `index.html`, browsers block reading that file, so a bar appears at the bottom of the page: click **Choose database.xlsx** and pick the file (it is remembered; choose it again after editing the Excel file). For automatic loading, serve the folder with a local web server instead:
 
 ```bash
 python3 -m http.server 8000   # then visit http://localhost:8000
@@ -50,9 +50,18 @@ python3 -m http.server 8000   # then visit http://localhost:8000
 ## Update publications and projects (Excel)
 
 1. Open `data/database.xlsx`. The `Instructions` sheet explains each column.
-2. **Publications sheet** columns: `Type` (Journal, Conference, Thesis, Submission / Preprint), `Status` (Published, Accepted, In Submission, Thesis), `Year`, `Title`, `Authors` (comma separated), `Venue`, `DOI` (a DOI or full URL), `PDF`, `Code`. DOI, PDF and Code buttons only appear when the cell is filled.
-3. **Projects sheet** columns: `Title`, `Members` (separated by `;`), `Thesis Status` (In progress, Preparing for defense, Defended), `Paper Status` (Submitted, Accepted, Published, or blank), `Paper Venue`, `Paper Link`.
+2. **Projects sheet** (undergraduate thesis projects): `Semester` (for example `Fall 2026`; `FA26` also works), `Title`, `Members` (separated by `;`), `Thesis Status`, `Paper Status`, `Paper Venue`, `Paper Link`.
+   - Semesters are sorted automatically: newest year first, and inside a year Fall, then Summer, then Spring.
+   - The newest semester is expanded and marked "Current"; older semesters are collapsed. Click a semester to open or close it.
+   - A new semester only needs new rows with the new semester name.
+3. **Publications sheet**: `Type`, `Status`, `Year`, `Month` (optional), `Day` (optional), `Title`, `Authors` (comma separated), `Venue`, `DOI` (a DOI or full URL), `PDF`, `Code`.
+   - Papers are always sorted newest first (Year, then Month, then Day), whatever the order of the rows. Visitors can switch between grouping by year and by type.
 4. Save, then replace `data/database.xlsx` in your repository (commit and push). The site shows the new data after GitHub Pages redeploys, usually within a minute or two.
 
-Papers are grouped by `Type`, sorted newest first and numbered automatically. The Excel file is public once deployed, so do not put private information in it. The library that reads Excel (SheetJS 0.18.5) is loaded from cdnjs.
+The Excel file is public once deployed, so do not put private information in it. The library that reads Excel (SheetJS 0.18.5) is loaded from cdnjs.
 
+## Troubleshooting: "Could not load data/database.xlsx"
+
+- Opened `index.html` by double-click? Browsers block this. Use `python3 -m http.server` (or VS Code Live Server), or view the deployed GitHub Pages site.
+- `data/database.xlsx` must be committed to the repository inside the `data` folder with exactly this name (case-sensitive).
+- The page needs internet access to load the Excel reader (cdnjs); ad blockers may block it.

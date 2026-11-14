@@ -72,7 +72,22 @@ h1{font-size:clamp(2.8rem,7vw,4.4rem);line-height:1.02;font-weight:700;letter-sp
 .team strong{color:var(--ink);font-weight:600}
 .badge.defense{color:var(--s-acc)}.badge.submitted{color:var(--s-sub)}
 
+/* Semester accordion */
+.sem{border-top:1px solid var(--line)}
+.sem:last-child{border-bottom:1px solid var(--line)}
+.sem summary{display:flex;align-items:center;gap:10px;padding:16px 0;cursor:pointer;list-style:none;font:600 1.35rem Newsreader,Georgia,serif}
+.sem summary::-webkit-details-marker{display:none}
+.sem summary::after{content:"";margin-left:auto;width:9px;height:9px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);transition:transform .2s}
+.sem[open] summary::after{transform:rotate(-135deg)}
+.sem summary em{font:500 .8rem 'IBM Plex Sans',sans-serif;font-style:normal;background:var(--soft);color:var(--brand);padding:1px 10px;border-radius:99px}
+.now{font:600 .75rem 'IBM Plex Sans',sans-serif;background:#1b4dff;color:#fff;padding:1px 10px;border-radius:99px}
+.sem .projects{padding:6px 0 30px}
+
 /* Publications */
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:99px;overflow:hidden;margin-bottom:26px}
+.seg button{border:0;background:transparent;padding:6px 16px;font:600 .85rem 'IBM Plex Sans',sans-serif;color:var(--muted);cursor:pointer}
+.seg button.on{background:#1b4dff;color:#fff}
+.ptype{font-size:.8rem;color:var(--muted)}
 .group{margin-bottom:40px}
 .group h3{display:flex;align-items:center;gap:10px;font-size:1.35rem;margin-bottom:6px}
 .group h3 em{font:500 .8rem 'IBM Plex Sans',sans-serif;font-style:normal;background:var(--soft);color:var(--brand);padding:1px 10px;border-radius:99px}
@@ -126,3 +141,7 @@ footer{padding:34px 0;border-top:1px solid var(--line);color:var(--muted);font-s
   section{padding:56px 0}
 }
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+
+/* Local preview bar (shown only when index.html is opened from disk) */
+.localbar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:30;display:flex;gap:14px;align-items:center;max-width:min(94vw,760px);padding:10px 12px 10px 18px;background:var(--panel);color:#eaf0ff;border-radius:14px;font-size:.9rem;line-height:1.4;box-shadow:0 8px 30px rgba(0,0,0,.3)}
+.localbar .btn{cursor:pointer;white-space:nowrap}
