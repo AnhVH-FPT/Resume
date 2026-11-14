@@ -66,6 +66,15 @@ h1{font-size:clamp(2.8rem,7vw,4.4rem);line-height:1.02;font-weight:700;letter-sp
 .ritem{border-top:2px solid var(--brand);padding-top:14px}
 .ritem p{color:var(--muted)}
 
+/* Supervision */
+.intro{color:var(--muted);max-width:64ch;margin-bottom:30px}
+.projects{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:34px 48px}
+.proj{border-left:2px solid var(--brand);padding-left:22px}
+.proj h3{font-size:1.15rem;line-height:1.35;margin-bottom:8px}
+.team{color:var(--muted);margin-bottom:4px}
+.team strong{color:var(--ink);font-weight:600}
+.badge.defense{color:var(--s-acc)}.badge.submitted{color:var(--s-sub)}
+
 /* Publications */
 .group{margin-bottom:40px}
 .group h3{display:flex;align-items:center;gap:10px;font-size:1.35rem;margin-bottom:6px}

@@ -41,6 +41,7 @@ python3 -m http.server 8000   # then visit http://localhost:8000
 - **Avatar**: save a square photo (at least 480x480 px) as `assets/img/avatar.jpg`. The initials placeholder disappears automatically.
 - **GitHub and LinkedIn**: search `YOUR_USERNAME` in `index.html` and replace it (two places each).
 - **Publications**: edit the `PUBS` array at the top of `assets/js/main.js`. Fill `doi` (for example `"10.1007/xxxxx"`), `pdf` or `code` and the matching button appears. Valid `type` values are `journal`, `conference`, `thesis`, `submission`. Valid `status` values are `published`, `accepted`, `submission`, `thesis`. Your name is bolded automatically.
+- **Supervised projects**: edit the `PROJECTS` array in `assets/js/main.js`. Replace the `Student Name` placeholders in `members` and choose `status` badges (`defense`, `submitted`).
 - **Vietnamese text**: any element with `data-vi="..."` shows its inner English text by default and the `data-vi` text when VI is selected. Add `data-vi` to new elements to translate them.
 - **Colors and fonts**: change the CSS variables in `:root` and `:root[data-theme=dark]` at the top of `assets/css/style.css`.
 - **Prospective students section**: the text in `#join` is a draft. Edit the topics, benefits and requirements to match your group.

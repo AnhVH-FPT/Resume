@@ -76,6 +76,29 @@
       items.map(pubCard).join('') || `<p class="empty" data-vi="${EMPTY[1]}">${EMPTY[0]}</p>`}</div>`;
   }).join('');
 
+  /* ---------- 1b. SUPERVISED PROJECTS DATA (edit here) ----------
+     members: replace the placeholders with real names (add or remove entries freely).
+     status:  any of 'defense' (preparing for defense) and 'submitted' (paper submitted to a conference). */
+  const PSTATUS = {
+    defense: ['Preparing for defense', 'Đang chuẩn bị bảo vệ'],
+    submitted: ['Paper submitted to an international conference', 'Đã nộp bài báo lên hội nghị quốc tế']
+  };
+  const PROJECTS = [
+    { title: 'Ultra-Early Warning System for Tiny Fire and Smoke Detection using Contextual Attention and Specialized Feature Pyramid Networks',
+      members: ['Student Name 1', 'Student Name 2', 'Student Name 3', 'Student Name 4'], status: ['defense', 'submitted'] },
+    { title: 'ExhibitFlow: Long-Term Context and Dynamic Motion-Appearance Weighting for Visitor Journey Analytics',
+      members: ['Student Name 1', 'Student Name 2', 'Student Name 3', 'Student Name 4'], status: ['defense', 'submitted'] },
+    { title: 'Structural Re-Parameterization, Spatial Coordinate Encoding, and Cross-Domain Robustness for Real-Time Safety Helmet Detection in Construction Surveillance',
+      members: ['Student Name 1', 'Student Name 2', 'Student Name 3', 'Student Name 4'], status: ['defense', 'submitted'] },
+    { title: 'FireGate: Multi-Level Home Fire Alerting with a Cascaded Edge-Gateway Architecture',
+      members: ['Student Name 1', 'Student Name 2', 'Student Name 3', 'Student Name 4'], status: ['defense', 'submitted'] }
+  ];
+  $('#projects').innerHTML = PROJECTS.map(p => `<article class="proj">
+    <h3>${esc(p.title)}</h3>
+    <p class="team"><strong data-vi="Nhóm thực hiện:">Team:</strong> ${p.members.map(esc).join(', ')}</p>
+    <div class="pmeta">${p.status.map(s => `<span class="badge ${s}" data-vi="${PSTATUS[s][1]}">${PSTATUS[s][0]}</span>`).join('')}</div>
+  </article>`).join('');
+
   /* ---------- 2. LANGUAGE SWITCH (EN / VI, no reload) ----------
      Any element with data-vi="..." keeps its English text as the default and swaps to Vietnamese. */
   const TITLE = { en: 'Ha Anh Vu: AI Lecturer and Researcher', vi: 'Ha Anh Vu: Giảng viên và nhà nghiên cứu AI' };
