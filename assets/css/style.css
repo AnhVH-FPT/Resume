@@ -33,9 +33,6 @@ p{margin-bottom:12px}
 .nav nav a{padding:6px 12px;border-radius:99px;color:var(--muted);text-decoration:none;font-size:.93rem;font-weight:500;white-space:nowrap}
 .nav nav a:hover{background:var(--soft);color:var(--brand)}
 #theme{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:1rem;cursor:pointer}
-.lang{display:flex;border:1px solid var(--line);border-radius:99px;overflow:hidden;flex:none}
-.lang button{border:0;background:transparent;padding:6px 12px;font:600 .8rem 'IBM Plex Sans',sans-serif;color:var(--muted);cursor:pointer}
-.lang button.on{background:var(--brand);color:#fff}
 
 /* Hero */
 .hero{position:relative;overflow:hidden;border-bottom:1px solid var(--line)}

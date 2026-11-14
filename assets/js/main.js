@@ -9,113 +9,84 @@
     set: (k, v) => { try { localStorage.setItem(k, v); } catch { /* storage unavailable */ } }
   };
 
-  /* ---------- 1. PUBLICATIONS DATA (edit here) ----------
-     type:   journal | conference | thesis | submission
-     status: published | accepted | submission | thesis
-     doi:    DOI string such as "10.1007/xxxxx" (the DOI link appears only when filled in)
-     pdf, code: full URLs (buttons appear only when filled in)                       */
+  /* ---------- 1. CONTENT FROM EXCEL (data/database.xlsx) ----------
+     Sheets "Publications" and "Projects" are read in the browser with SheetJS; nothing here needs editing
+     except ME, the name shown in bold in author lists. */
   const ME = 'Ha Anh Vu';
-  const PUBS = [
-    { id: 'S1', type: 'submission', status: 'submission', year: 2026, authors: 'Hien Tran, Ha Anh Vu',
-      title: 'From Black-Box to Fail-Safe: Uncertainty-Aware Brain Tumor Classification using Bayesian Deep Learning and Grad-CAM++',
-      venue: 'Signal, Image and Video Processing, Springer Nature (under review)', doi: '', pdf: '', code: '' },
-    { id: 'C1', type: 'conference', status: 'accepted', year: 2026, authors: 'Quang Nguyen, Quan Do, Minh Anh Tran, Dung Nguyen, Ha Anh Vu',
-      title: 'V-FUSE: Dynamic Gating Fusion of Multi-layer Self-Supervised Embeddings and Spectral Features for Vietnamese Speaker Verification',
-      venue: 'EAI FPT International Conference on Intelligent Systems and Advanced Technologies (EAI FISAT 2026)', doi: '', pdf: '', code: '' },
-    { id: 'C2', type: 'conference', status: 'accepted', year: 2026, authors: 'Hoai My Nguyen, Xuan Trung Nguyen, Anh Minh Phan, Phong Pham Nguyen Minh, Ha Anh Vu',
-      title: 'Lightweight Conditional Routing for Real-Time Multi-Domain Object Detection in Low-Light UAV Imagery',
-      venue: '20th IEEE-RIVF International Conference on Computing and Communication Technologies (RIVF 2026)', doi: '', pdf: '', code: '' },
-    { id: 'C3', type: 'conference', status: 'accepted', year: 2026, authors: 'Xuan Trung Nguyen, Vy Kiet Trinh, Thanh Phat Nguyen, Ha Anh Vu',
-      title: 'Attribute-Guided Quantized Bottleneck Representation for Bandwidth-Efficient Split-Computing Face Anti-Spoofing',
-      venue: '20th IEEE-RIVF International Conference on Computing and Communication Technologies (RIVF 2026)', doi: '', pdf: '', code: '' },
-    { id: 'C4', type: 'conference', status: 'accepted', year: 2026, authors: 'Khang Vo, Hung Nguyen, Thuan Nguyen, Phuc Lai, Ha Anh Vu',
-      title: 'Adaptive Motion-Appearance Fusion for Robust Multi-Object Tracking with Liquid Time-Constant Motion Prediction',
-      venue: '20th IEEE-RIVF International Conference on Computing and Communication Technologies (RIVF 2026)', doi: '', pdf: '', code: '' },
-    { id: 'C5', type: 'conference', status: 'accepted', year: 2026, authors: 'Hoai My Nguyen, Xuan Trung Nguyen, Anh Minh Phan, Phong Pham Nguyen Minh, Ha Anh Vu',
-      title: 'CounterFail-Edge: Compact Black-Box Verification of Robotic Manipulation from Before–After Images and Instructions',
-      venue: '19th International Conference on Control, Automation, Robotics and Vision (IEEE ICARCV 2026)', doi: '', pdf: '', code: '' },
-    { id: 'C6', type: 'conference', status: 'published', year: 2024, authors: 'Ha Anh Vu, Szilárd Vajda',
-      title: 'Advancing Brain Tumor Diagnosis: A Hybrid Approach Using Edge Detection and Deep Learning',
-      venue: 'International Conference on Pattern Recognition (ICPR 2024), Springer Nature', doi: '', pdf: '', code: '' },
-    { id: 'C7', type: 'conference', status: 'published', year: 2024, authors: 'Ha Anh Vu, KC Santosh, Szilárd Vajda',
-      title: 'An Expert Voting System for Brain Tumor Classification Using MRI Images',
-      venue: 'Proceedings of the Seventh International Conference on Recent Trends in Image Processing and Pattern Recognition (RTIP2R 2024)', doi: '', pdf: '', code: '' },
-    { id: 'T1', type: 'thesis', status: 'thesis', year: 2025, authors: 'Ha Anh Vu',
-      title: 'Ensemble Learning for MRI-Based Brain Tumor Classification: A Weighted Voting Approach',
-      venue: 'Master’s thesis, Central Washington University', doi: '', pdf: '', code: '' },
-    { id: 'T2', type: 'thesis', status: 'thesis', year: 2022, authors: 'Ha Anh Vu',
-      title: 'Development of a Fire Detection Application Using Deep Learning Models on Jetson Nano',
-      venue: 'Bachelor’s thesis, University of Information Technology, Vietnam National University', doi: '', pdf: '', code: '' }
-  ];
-  const GROUPS = [
-    { key: 'journal', en: 'Journal articles', vi: 'Bài báo tạp chí' },
-    { key: 'conference', en: 'Conference proceedings', vi: 'Kỷ yếu hội nghị' },
-    { key: 'thesis', en: 'Thesis', vi: 'Luận văn' },
-    { key: 'submission', en: 'In submission and preprints', vi: 'Đang nộp và bản thảo (preprint)' }
-  ];
-  const STATUS = {
-    published: ['Published', 'Đã xuất bản'], accepted: ['Accepted', 'Đã chấp nhận'],
-    submission: ['In Submission', 'Đang nộp'], thesis: ['Thesis', 'Luận văn']
-  };
-  const EMPTY = ['No journal articles published yet. See “In submission” below.', 'Chưa có bài báo tạp chí nào được xuất bản. Xem mục “Đang nộp” bên dưới.'];
-
+  const DB_FILE = 'data/database.xlsx';
+  const txt = v => String(v == null ? '' : v).trim();
+  const row = r => Object.fromEntries(Object.entries(r).map(([k, v]) => [k.trim().toLowerCase(), txt(v)]));
   const esc = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const chip = (href, label) => href ? `<a class="chip" href="${esc(href)}" target="_blank" rel="noopener">${label}</a>` : '';
+  const doiUrl = d => d && (/^https?:/i.test(d) ? d : 'https://doi.org/' + d);
+
+  const GROUPS = [
+    { key: 'journal', label: 'Journal articles', prefix: 'J' },
+    { key: 'conference', label: 'Conference proceedings', prefix: 'C' },
+    { key: 'thesis', label: 'Thesis', prefix: 'T' },
+    { key: 'submission', label: 'In submission and preprints', prefix: 'S' }
+  ];
+  const STATUS = { published: 'Published', accepted: 'Accepted', submission: 'In Submission', thesis: 'Thesis' };
+  const typeOf = s => { s = txt(s).toLowerCase(); return s[0] === 'j' ? 'journal' : s[0] === 'c' ? 'conference' : s[0] === 't' ? 'thesis' : 'submission'; };
+  const statusOf = s => { s = txt(s).toLowerCase(); return s.includes('accept') ? 'accepted' : s.includes('publish') ? 'published' : s.includes('thesis') ? 'thesis' : 'submission'; };
+
   const pubCard = p => `<article class="pub">
     <span class="pid">[${p.id}]</span>
     <div>
       <h4>${esc(p.title)}</h4>
       <p class="au">${esc(p.authors).split(ME).join(`<strong>${ME}</strong>`)}</p>
-      <p class="ve"><em>${esc(p.venue)}</em>, ${p.year}</p>
-      <div class="pmeta"><span class="badge ${p.status}" data-vi="${STATUS[p.status][1]}">${STATUS[p.status][0]}</span>${chip(p.doi && 'https://doi.org/' + p.doi, 'DOI')}${chip(p.pdf, 'PDF')}${chip(p.code, 'Code')}</div>
+      <p class="ve"><em>${esc(p.venue)}</em>${p.year ? ', ' + p.year : ''}</p>
+      <div class="pmeta"><span class="badge ${p.status}">${STATUS[p.status]}</span>${chip(doiUrl(p.doi), 'DOI')}${chip(p.pdf, 'PDF')}${chip(p.code, 'Code')}</div>
     </div></article>`;
 
-  $('#pubs').innerHTML = GROUPS.map(g => {
-    const items = PUBS.filter(p => p.type === g.key);
-    return `<div class="group"><h3><span data-vi="${g.vi}">${g.en}</span><em>${items.length}</em></h3>${
-      items.map(pubCard).join('') || `<p class="empty" data-vi="${EMPTY[1]}">${EMPTY[0]}</p>`}</div>`;
-  }).join('');
-
-  /* ---------- 1b. SUPERVISED PROJECTS DATA (edit here) ----------
-     members: replace the placeholders with real names (add or remove entries freely).
-     status:  any of 'defense' (preparing for defense) and 'submitted' (paper submitted to a conference). */
-  const PSTATUS = {
-    defense: ['Preparing for defense', 'Đang chuẩn bị bảo vệ'],
-    submitted: ['Paper submitted to an international conference', 'Đã nộp bài báo lên hội nghị quốc tế']
+  const renderPubs = rows => {
+    const pubs = rows.map(row).filter(r => r.title).map((r, i) => ({ ...r, i, type: typeOf(r.type), status: statusOf(r.status), year: parseInt(r.year, 10) || 0 }));
+    pubs.sort((a, b) => b.year - a.year || a.i - b.i);
+    $('#pubs').innerHTML = GROUPS.map(g => {
+      const items = pubs.filter(p => p.type === g.key);
+      items.forEach((p, n) => { p.id = g.prefix + (n + 1); });
+      return `<div class="group"><h3><span>${g.label}</span><em>${items.length}</em></h3>${
+        items.map(pubCard).join('') || '<p class="empty">Nothing in this group yet.</p>'}</div>`;
+    }).join('');
   };
-  const PROJECTS = [
-    { title: 'Ultra-Early Warning System for Tiny Fire and Smoke Detection using Contextual Attention and Specialized Feature Pyramid Networks',
-      members: ['Student Name 1', 'Student Name 2', 'Student Name 3', 'Student Name 4'], status: ['defense', 'submitted'] },
-    { title: 'ExhibitFlow: Long-Term Context and Dynamic Motion-Appearance Weighting for Visitor Journey Analytics',
-      members: ['Student Name 1', 'Student Name 2', 'Student Name 3', 'Student Name 4'], status: ['defense', 'submitted'] },
-    { title: 'Structural Re-Parameterization, Spatial Coordinate Encoding, and Cross-Domain Robustness for Real-Time Safety Helmet Detection in Construction Surveillance',
-      members: ['Student Name 1', 'Student Name 2', 'Student Name 3', 'Student Name 4'], status: ['defense', 'submitted'] },
-    { title: 'FireGate: Multi-Level Home Fire Alerting with a Cascaded Edge-Gateway Architecture',
-      members: ['Student Name 1', 'Student Name 2', 'Student Name 3', 'Student Name 4'], status: ['defense', 'submitted'] }
-  ];
-  $('#projects').innerHTML = PROJECTS.map(p => `<article class="proj">
-    <h3>${esc(p.title)}</h3>
-    <p class="team"><strong data-vi="Nhóm thực hiện:">Team:</strong> ${p.members.map(esc).join(', ')}</p>
-    <div class="pmeta">${p.status.map(s => `<span class="badge ${s}" data-vi="${PSTATUS[s][1]}">${PSTATUS[s][0]}</span>`).join('')}</div>
-  </article>`).join('');
 
-  /* ---------- 2. LANGUAGE SWITCH (EN / VI, no reload) ----------
-     Any element with data-vi="..." keeps its English text as the default and swaps to Vietnamese. */
-  const TITLE = { en: 'Ha Anh Vu: AI Lecturer and Researcher', vi: 'Ha Anh Vu: Giảng viên và nhà nghiên cứu AI' };
-  const setLang = l => {
-    root.lang = root.dataset.lang = l;
-    $$('[data-vi]').forEach(el => {
-      if (!('en' in el.dataset)) el.dataset.en = el.innerHTML;
-      el.innerHTML = l === 'vi' ? el.dataset.vi : el.dataset.en;
-    });
-    $$('.lang button').forEach(b => b.classList.toggle('on', b.dataset.set === l));
-    document.title = TITLE[l];
-    store.set('lang', l);
+  const renderProjects = rows => {
+    $('#projects').innerHTML = rows.map(row).filter(r => r.title).map(r => {
+      const ts = r['thesis status'].toLowerCase(), ps = r['paper status'].toLowerCase();
+      const tcls = /defended|completed/.test(ts) ? 'published' : ts.includes('prepar') ? 'defense' : 'thesis';
+      const pst = ps.includes('submit') ? 'submitted' : ps.includes('accept') ? 'accepted' : ps.includes('publish') ? 'published' : '';
+      const venue = r['paper venue'] || 'an international conference';
+      const members = r.members.split(/[;\n,]+/).map(s => s.trim()).filter(Boolean).map(esc).join(', ');
+      return `<article class="proj">
+        <h3>${esc(r.title)}</h3>
+        ${members ? `<p class="team"><strong>Team:</strong> ${members}</p>` : ''}
+        <div class="pmeta">${r['thesis status'] ? `<span class="badge ${tcls}">${esc(r['thesis status'])}</span>` : ''}${
+          pst ? `<span class="badge ${pst}">Paper ${pst} ${pst === 'submitted' ? 'to' : 'at'} ${esc(venue)}</span>` : ''}${chip(r['paper link'], 'Paper')}</div>
+      </article>`;
+    }).join('') || '<p class="empty">No projects yet.</p>';
   };
-  $$('.lang button').forEach(b => b.addEventListener('click', () => setLang(b.dataset.set)));
-  setLang(store.get('lang') === 'vi' ? 'vi' : 'en');
 
-  /* ---------- 3. THEME (light / dark) ---------- */
+  (async () => {
+    $('#pubs').innerHTML = $('#projects').innerHTML = '<p class="empty">Loading…</p>';
+    try {
+      if (!window.XLSX) throw new Error('SheetJS library did not load');
+      let wb;
+      if (window.DB_BASE64) wb = XLSX.read(window.DB_BASE64, { type: 'base64' });   // used only by the preview build
+      else {
+        const res = await fetch(DB_FILE + '?v=' + Date.now());
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        wb = XLSX.read(await res.arrayBuffer(), { type: 'array' });
+      }
+      const rows = name => { const n = wb.SheetNames.find(s => s.trim().toLowerCase() === name.toLowerCase()); return n ? XLSX.utils.sheet_to_json(wb.Sheets[n], { defval: '' }) : []; };
+      renderPubs(rows('Publications'));
+      renderProjects(rows('Projects'));
+    } catch (err) {
+      console.error(err);
+      $('#pubs').innerHTML = $('#projects').innerHTML = '<p class="empty">Could not load data/database.xlsx. If you opened index.html directly from disk, run a local server (python3 -m http.server) or deploy to GitHub Pages.</p>';
+    }
+  })();
+
+  /* ---------- 2. THEME (light / dark) ---------- */
   const applyTheme = t => { root.dataset.theme = t; };
   applyTheme(store.get('theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
   $('#theme').addEventListener('click', () => {
@@ -123,7 +94,7 @@
     applyTheme(t); store.set('theme', t);
   });
 
-  /* ---------- 4. HERO NEURAL-NETWORK BACKGROUND ---------- */
+  /* ---------- 3. HERO NEURAL-NETWORK BACKGROUND ---------- */
   const cv = $('#net'), g = cv.getContext('2d'), hero = cv.parentElement;
   const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
   let W = 0, H = 0, nodes = [], mx = -999, my = -999;

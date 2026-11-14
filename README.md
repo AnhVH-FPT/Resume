@@ -6,18 +6,20 @@ Static site (plain HTML, CSS, JavaScript). No build step, no dependencies. Works
 
 ```
 academic-site/
-├── index.html            # Page content (English default + data-vi Vietnamese text)
+├── index.html            # Page content 
 ├── README.md
+├── data/
+│   └── database.xlsx     # Publications and projects: edit this file in Excel
 ├── .nojekyll             # Tells GitHub Pages to serve files as they are
 └── assets/
     ├── css/style.css     # Design tokens (light/dark) and layout
-    ├── js/main.js        # Publications data, EN/VI switch, theme toggle, hero animation
-    └── img/              # Put avatar.jpg here
+    ├── js/main.js        # Publications data, theme toggle, hero animation
+    └── img/              # Put avatar.png here
 ```
 
 ## Run locally
 
-Open `index.html` in a browser, or serve the folder:
+The site reads `data/database.xlsx`, so serve the folder with a local web server (opening `index.html` by double-click cannot load the Excel file):
 
 ```bash
 python3 -m http.server 8000   # then visit http://localhost:8000
@@ -38,11 +40,19 @@ python3 -m http.server 8000   # then visit http://localhost:8000
 
 ## Customize
 
-- **Avatar**: save a square photo (at least 480x480 px) as `assets/img/avatar.jpg`. The initials placeholder disappears automatically.
+- **Avatar**: save a square photo (at least 480x480 px) as `assets/img/avatar.png`. The initials placeholder disappears automatically.
 - **GitHub and LinkedIn**: search `YOUR_USERNAME` in `index.html` and replace it (two places each).
-- **Publications**: edit the `PUBS` array at the top of `assets/js/main.js`. Fill `doi` (for example `"10.1007/xxxxx"`), `pdf` or `code` and the matching button appears. Valid `type` values are `journal`, `conference`, `thesis`, `submission`. Valid `status` values are `published`, `accepted`, `submission`, `thesis`. Your name is bolded automatically.
-- **Supervised projects**: edit the `PROJECTS` array in `assets/js/main.js`. Replace the `Student Name` placeholders in `members` and choose `status` badges (`defense`, `submitted`).
-- **Vietnamese text**: any element with `data-vi="..."` shows its inner English text by default and the `data-vi` text when VI is selected. Add `data-vi` to new elements to translate them.
+- **Publications and projects**: edit `data/database.xlsx` (see the next section). No HTML or JavaScript changes are needed.
 - **Colors and fonts**: change the CSS variables in `:root` and `:root[data-theme=dark]` at the top of `assets/css/style.css`.
 - **Prospective students section**: the text in `#join` is a draft. Edit the topics, benefits and requirements to match your group.
 - **Custom domain** (optional): add a `CNAME` file containing your domain, then set the domain in Settings, then Pages.
+
+## Update publications and projects (Excel)
+
+1. Open `data/database.xlsx`. The `Instructions` sheet explains each column.
+2. **Publications sheet** columns: `Type` (Journal, Conference, Thesis, Submission / Preprint), `Status` (Published, Accepted, In Submission, Thesis), `Year`, `Title`, `Authors` (comma separated), `Venue`, `DOI` (a DOI or full URL), `PDF`, `Code`. DOI, PDF and Code buttons only appear when the cell is filled.
+3. **Projects sheet** columns: `Title`, `Members` (separated by `;`), `Thesis Status` (In progress, Preparing for defense, Defended), `Paper Status` (Submitted, Accepted, Published, or blank), `Paper Venue`, `Paper Link`.
+4. Save, then replace `data/database.xlsx` in your repository (commit and push). The site shows the new data after GitHub Pages redeploys, usually within a minute or two.
+
+Papers are grouped by `Type`, sorted newest first and numbered automatically. The Excel file is public once deployed, so do not put private information in it. The library that reads Excel (SheetJS 0.18.5) is loaded from cdnjs.
+
