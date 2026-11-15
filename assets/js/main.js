@@ -48,8 +48,8 @@
   };
   // </semester-helpers>
 
-  /* ----- Publications: newest first (Year, then Month, then Day); view by year or by type ----- */
-  const pubCard = p => `<article class="pub">
+  /* ----- Publications: newest first (Year, Month, Day). By year: 3 latest years open; by type: all open ----- */
+  const pubCard = p => `<article class="pub" id="pub-${p.id}">
     <span class="pid">[${p.id}]</span>
     <div>
       <h4>${esc(p.title)}</h4>
@@ -60,35 +60,39 @@
 
   let PUBS = [], pubView = 'year';
   const drawPubs = () => {
-    const sec = (title, items) => `<div class="group"><h3><span>${title}</span><em>${items.length}</em></h3>${
-      items.map(pubCard).join('') || '<p class="empty">Nothing in this group yet.</p>'}</div>`;
+    const sec = (title, items, open) => `<details class="sem"${open ? ' open' : ''}><summary><span>${title}</span><em>${items.length}</em></summary><div class="plist">${
+      items.map(pubCard).join('') || '<p class="empty">Nothing in this group yet.</p>'}</div></details>`;
     const html = pubView === 'type'
-      ? GROUPS.map(g => sec(g.label, PUBS.filter(p => p.type === g.key))).join('')
-      : [...new Set(PUBS.map(p => p.year))].map(y => sec(y || 'Undated', PUBS.filter(p => p.year === y))).join('');
+      ? GROUPS.map(g => sec(g.label, PUBS.filter(p => p.type === g.key), true)).join('')
+      : [...new Set(PUBS.map(p => p.year))].map((y, i) => sec(y || 'Undated', PUBS.filter(p => p.year === y), i < 3)).join('');
     $('#pubs').innerHTML = html || '<p class="empty">No publications yet.</p>';
     $$('.seg button').forEach(b => b.classList.toggle('on', b.dataset.view === pubView));
   };
   const renderPubs = rows => {
     PUBS = rows.map(row).filter(r => r.title).map((r, i) => ({ ...r, i, type: typeOf(r.type), status: statusOf(r.status),
-      year: parseInt(r.year, 10) || 0, month: monthOf(r.month), day: parseInt(r.day, 10) || 0 }));
+      year: parseInt(r.year, 10) || 0, month: monthOf(r.month), day: parseInt(r.day, 10) || 0, link: (r['link id'] || '').toLowerCase() }));
     PUBS.sort((a, b) => b.year - a.year || b.month - a.month || b.day - a.day || a.i - b.i);
     GROUPS.forEach(g => PUBS.filter(p => p.type === g.key).forEach((p, n) => { p.id = g.prefix + (n + 1); }));
     drawPubs();
   };
   $$('.seg button').forEach(b => b.addEventListener('click', () => { pubView = b.dataset.view; drawPubs(); }));
 
-  /* ----- Supervised thesis projects: grouped by semester, newest expanded, older collapsed ----- */
+  /* ----- Undergraduate thesis projects: by semester, 2 newest expanded, older collapsed ----- */
   const projCard = r => {
-    const ts = r['thesis status'].toLowerCase(), ps = r['paper status'].toLowerCase();
-    const tcls = /defended|completed/.test(ts) ? 'published' : ts.includes('prepar') ? 'defense' : 'thesis';
-    const pst = ps.includes('submit') ? 'submitted' : ps.includes('accept') ? 'accepted' : ps.includes('publish') ? 'published' : '';
-    const venue = r['paper venue'] || 'an international conference';
+    const ts = r['thesis status'].toLowerCase(), ps = r['paper status'].toLowerCase(), key = (r['link id'] || '').toLowerCase();
+    const tcls = /defend|complete/.test(ts) ? 'published' : ts.includes('progress') ? 'defense' : 'thesis';   // green / blue / gray
     const members = r.members.split(/[;\n,]+/).map(s => s.trim()).filter(Boolean).map(esc).join(', ');
+    let paper = '';
+    if (ps.includes('submit')) paper = `<span class="badge submitted">Paper submitted${r['paper venue'] ? ' to ' + esc(r['paper venue']) : ''}</span>`;
+    else if (/accept|publish/.test(ps)) {
+      const pub = key && PUBS.find(p => p.link === key);                       // matched by Link ID, not by title
+      if (!pub) console.warn('No publication with Link ID "' + r['link id'] + '" for project: ' + r.title);
+      paper = pub ? `<a class="badge accepted" href="#pub-${pub.id}" data-go="${pub.id}">Accepted, see ${pub.id}</a>` : '<span class="badge accepted">Accepted</span>';
+    }                                                                           // "None" or blank: no paper badge
     return `<article class="proj">
       <h3>${esc(r.title)}</h3>
       ${members ? `<p class="team"><strong>Team:</strong> ${members}</p>` : ''}
-      <div class="pmeta">${r['thesis status'] ? `<span class="badge ${tcls}">${esc(r['thesis status'])}</span>` : ''}${
-        pst ? `<span class="badge ${pst}">Paper ${pst} ${pst === 'submitted' ? 'to' : 'at'} ${esc(venue)}</span>` : ''}${chip(r['paper link'], 'Paper')}</div>
+      <div class="pmeta">${r['thesis status'] ? `<span class="badge ${tcls}">${esc(r['thesis status'])}</span>` : ''}${paper}</div>
     </article>`;
   };
   const renderProjects = rows => {
@@ -98,10 +102,20 @@
       g.items.push(r); groups.set(s.label, g);
     });
     const list = [...groups.values()].sort((a, b) => b.key - a.key);          // newest semester first
-    $('#projects').innerHTML = list.map((g, i) => `<details class="sem"${i === 0 ? ' open' : ''}>
+    $('#projects').innerHTML = list.map((g, i) => `<details class="sem"${i < 2 ? ' open' : ''}>
       <summary><span>${esc(g.label)}</span>${i === 0 ? '<span class="now">Current</span>' : ''}<em>${g.items.length}</em></summary>
       <div class="projects">${g.items.map(projCard).join('')}</div></details>`).join('') || '<p class="empty">No projects yet.</p>';
   };
+  // Clicking "Accepted, see C1" opens the paper's group in Publications and scrolls to the paper
+  $('#projects').addEventListener('click', e => {
+    const a = e.target.closest('[data-go]'); if (!a) return;
+    const card = document.getElementById('pub-' + a.dataset.go); if (!card) return;
+    e.preventDefault();
+    card.closest('details').open = true;
+    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    card.classList.remove('flash'); void card.offsetWidth; card.classList.add('flash');
+    setTimeout(() => card.classList.remove('flash'), 2600);
+  });
 
   const showWb = wb => {
     const rows = name => {

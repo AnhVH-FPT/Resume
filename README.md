@@ -49,14 +49,15 @@ python3 -m http.server 8000   # then visit http://localhost:8000
 
 ## Update publications and projects (Excel)
 
-1. Open `data/database.xlsx`. The `Instructions` sheet explains each column.
-2. **Projects sheet** (undergraduate thesis projects): `Semester` (for example `Fall 2026`; `FA26` also works), `Title`, `Members` (separated by `;`), `Thesis Status`, `Paper Status`, `Paper Venue`, `Paper Link`.
-   - Semesters are sorted automatically: newest year first, and inside a year Fall, then Summer, then Spring.
-   - The newest semester is expanded and marked "Current"; older semesters are collapsed. Click a semester to open or close it.
-   - A new semester only needs new rows with the new semester name.
-3. **Publications sheet**: `Type`, `Status`, `Year`, `Month` (optional), `Day` (optional), `Title`, `Authors` (comma separated), `Venue`, `DOI` (a DOI or full URL), `PDF`, `Code`.
-   - Papers are always sorted newest first (Year, then Month, then Day), whatever the order of the rows. Visitors can switch between grouping by year and by type.
-4. Save, then replace `data/database.xlsx` in your repository (commit and push). The site shows the new data after GitHub Pages redeploys, usually within a minute or two.
+1. Open `data/database.xlsx`. The `Instructions` sheet explains every column.
+2. **Projects sheet** (undergraduate thesis projects): `Semester` (for example `Fall 2026`; `FA26` also works), `Title`, `Members` (separated by `;`), `Thesis Status`, `Paper Status`, `Paper Venue`, `Link ID`.
+   - `Thesis Status`: **Preparing** (topic just chosen), **In progress** (work ongoing), **Defended** (finished).
+   - `Paper Status`: **None** (no badge), **Submitted** (badge "Paper submitted"), **Accepted** (badge "Accepted, see C1").
+   - Semesters are sorted automatically (newest year first; Fall, then Summer, then Spring inside a year). The 2 newest semesters are expanded; older ones are collapsed until clicked.
+3. **Publications sheet**: `Type`, `Status`, `Year`, `Month` (optional), `Day` (optional), `Title`, `Authors` (comma separated), `Venue`, `DOI` (a DOI or full URL), `PDF`, `Code`, `Link ID`.
+   - Papers are always sorted newest first. **By year** view expands the 3 most recent years and collapses the rest; **By type** view expands every group (each can still be collapsed).
+4. **Linking a thesis to its paper:** put the same `Link ID` (any short code, for example `AC1`) on the project row and on the paper row. When the project's `Paper Status` is `Accepted`, its badge reads "Accepted, see C1" (the paper's number in Publications) and clicking it opens and scrolls to that paper. Titles do not need to match. Add the accepted paper itself as a normal Publications row.
+5. Save, then replace `data/database.xlsx` in your repository (commit and push). The site shows the new data after GitHub Pages redeploys, usually within a minute or two.
 
 The Excel file is public once deployed, so do not put private information in it. The library that reads Excel (SheetJS 0.18.5) is loaded from cdnjs.
 

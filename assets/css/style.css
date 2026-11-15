@@ -82,6 +82,12 @@ h1{font-size:clamp(2.8rem,7vw,4.4rem);line-height:1.02;font-weight:700;letter-sp
 .sem summary em{font:500 .8rem 'IBM Plex Sans',sans-serif;font-style:normal;background:var(--soft);color:var(--brand);padding:1px 10px;border-radius:99px}
 .now{font:600 .75rem 'IBM Plex Sans',sans-serif;background:#1b4dff;color:#fff;padding:1px 10px;border-radius:99px}
 .sem .projects{padding:6px 0 30px}
+.plist{padding:0 0 26px}
+.plist .pub:first-child,.plist .empty:first-child{border-top:0}
+a.badge{text-decoration:none}a.badge:hover{text-decoration:underline}
+.pub{border-radius:8px}
+.pub.flash{animation:flash 2.6s ease-out}
+@keyframes flash{0%,55%{background:var(--soft);box-shadow:0 0 0 8px var(--soft)}100%{background:transparent;box-shadow:0 0 0 8px transparent}}
 
 /* Publications */
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:99px;overflow:hidden;margin-bottom:26px}
