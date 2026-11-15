@@ -58,13 +58,46 @@
       <div class="pmeta"><span class="ptype">${TYPE_LABEL[p.type]}</span><span class="badge ${p.status}">${STATUS[p.status]}</span>${chip(doiUrl(p.doi), 'DOI')}${chip(p.pdf, 'PDF')}${chip(p.code, 'Code')}</div>
     </div></article>`;
 
+  // Venue matching that tolerates messy input: "RIVF 2026", "IEEE RIVF" and the full conference name count as one venue
+  const VSTOP = new Set('international intl conference conf proceedings proceeding proc of on the and for in journal symposium workshop transactions ieee acm springer nature elsevier press annual'.split(' '));
+  const words = s => s.toLowerCase().replace(/\b(19|20)\d{2}\b/g, ' ').replace(/\b\d+(st|nd|rd|th)\b/g, ' ').split(/[^a-z0-9]+/).filter(w => w.length > 1 && !VSTOP.has(w));
+  const venueSets = v => {
+    v = txt(v);
+    const m = v.match(/\(([^)]*\d{4}[^)]*)\)/);                                   // "(RIVF 2026)" is the short name
+    const full = new Set(words(v.replace(/\([^)]*\)/g, x => /\d{4}/.test(x) ? x : ' ')));   // drops "(under review)" etc.
+    return { full, short: new Set(m ? words(m[1]) : full.size === 1 ? [...full] : []) };
+  };
+  const sub = (a, b) => a.size > 0 && [...a].every(w => b.has(w));
+  const jac = (a, b) => { const n = [...a].filter(w => b.has(w)).length; return n / (a.size + b.size - n || 1); };
+  const sameVenue = (a, b) => jac(a.full, b.full) >= 0.6 || sub(a.short, b.full) || sub(b.short, a.full);
+  const clusterVenues = list => {
+    const sets = list.map(p => venueSets(p.venue)), root = list.map((_, i) => i);
+    const find = i => root[i] === i ? i : (root[i] = find(root[i]));
+    for (let i = 0; i < list.length; i++) for (let j = i + 1; j < list.length; j++)
+      if (sets[i].full.size && sets[j].full.size && sameVenue(sets[i], sets[j])) root[find(j)] = find(i);
+    const label = new Map();                                                       // cluster name does not depend on row order
+    list.forEach((p, i) => { const r = find(i), k = [...sets[i].full].sort().join(' '); if (!label.has(r) || k < label.get(r)) label.set(r, k); });
+    list.forEach((p, i) => { p.vkey = sets[i].full.size ? label.get(find(i)) : 'zz ' + p.title.toLowerCase(); });
+  };
+  const STATUS_RANK = { published: 0, thesis: 0, accepted: 1, submission: 2 };   // published first, in submission last
+  // Order a list of papers: (optionally) by status, then keep the same venue together
+  // (venues ordered by their newest paper), then newest first inside a venue.
+  const arrange = (items, byStatus) => {
+    const rank = p => byStatus ? STATUS_RANK[p.status] : 0, best = new Map();
+    items.forEach(p => { const k = rank(p) + '|' + p.vkey; best.set(k, Math.max(best.get(k) || 0, p.dkey)); });
+    return [...items].sort((a, b) => rank(a) - rank(b)
+      || best.get(rank(b) + '|' + b.vkey) - best.get(rank(a) + '|' + a.vkey)
+      || (a.vkey < b.vkey ? -1 : a.vkey > b.vkey ? 1 : 0)
+      || b.dkey - a.dkey || a.title.toLowerCase().localeCompare(b.title.toLowerCase()) || a.i - b.i);
+  };
+
   let PUBS = [], pubView = 'year';
   const drawPubs = () => {
     const sec = (title, items, open) => `<details class="sem"${open ? ' open' : ''}><summary><span>${title}</span><em>${items.length}</em></summary><div class="plist">${
       items.map(pubCard).join('') || '<p class="empty">Nothing in this group yet.</p>'}</div></details>`;
     const html = pubView === 'type'
-      ? GROUPS.map(g => sec(g.label, PUBS.filter(p => p.type === g.key), true)).join('')
-      : [...new Set(PUBS.map(p => p.year))].map((y, i) => sec(y || 'Undated', PUBS.filter(p => p.year === y), i < 3)).join('');
+      ? GROUPS.map(g => sec(g.label, arrange(PUBS.filter(p => p.type === g.key), false), true)).join('')
+      : [...new Set(PUBS.map(p => p.year))].map((y, i) => sec(y || 'Undated', arrange(PUBS.filter(p => p.year === y), true), i < 3)).join('');
     $('#pubs').innerHTML = html || '<p class="empty">No publications yet.</p>';
     $$('.seg button').forEach(b => b.classList.toggle('on', b.dataset.view === pubView));
   };
@@ -72,7 +105,9 @@
     PUBS = rows.map(row).filter(r => r.title).map((r, i) => ({ ...r, i, type: typeOf(r.type), status: statusOf(r.status),
       year: parseInt(r.year, 10) || 0, month: monthOf(r.month), day: parseInt(r.day, 10) || 0, link: (r['link id'] || '').toLowerCase() }));
     PUBS.sort((a, b) => b.year - a.year || b.month - a.month || b.day - a.day || a.i - b.i);
-    GROUPS.forEach(g => PUBS.filter(p => p.type === g.key).forEach((p, n) => { p.id = g.prefix + (n + 1); }));
+    PUBS.forEach(p => { p.dkey = p.year * 10000 + p.month * 100 + p.day; });
+    clusterVenues(PUBS);
+    GROUPS.forEach(g => arrange(PUBS.filter(p => p.type === g.key), false).forEach((p, n) => { p.id = g.prefix + (n + 1); }));
     drawPubs();
   };
   $$('.seg button').forEach(b => b.addEventListener('click', () => { pubView = b.dataset.view; drawPubs(); }));
