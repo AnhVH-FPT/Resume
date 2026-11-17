@@ -15,8 +15,11 @@
   const ME = 'Ha Anh Vu';
   const DB_FILE = 'data/database.xlsx';
   const txt = v => String(v == null ? '' : v).trim();
-  const row = r => Object.fromEntries(Object.entries(r).map(([k, v]) => [k.trim().toLowerCase(), txt(v)]));
-  const esc = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const row = r => {                                                   // a missing column simply reads as an empty cell
+    const o = Object.fromEntries(Object.entries(r).map(([k, v]) => [k.trim().toLowerCase(), txt(v)]));
+    return new Proxy(o, { get: (t, k) => (k in t ? t[k] : '') });
+  };
+  const esc = s => txt(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const chip = (href, label) => href ? `<a class="chip" href="${esc(href)}" target="_blank" rel="noopener">${label}</a>` : '';
   const doiUrl = d => d && (/^https?:/i.test(d) ? d : 'https://doi.org/' + d);
 
@@ -54,7 +57,7 @@
     <div>
       <h4>${esc(p.title)}</h4>
       <p class="au">${esc(p.authors).split(ME).join(`<strong>${ME}</strong>`)}</p>
-      <p class="ve"><em>${esc(p.venue)}</em>${p.year ? ', ' + p.year : ''}</p>
+      <p class="ve"><em>${esc(p.venue)}</em>, ${fmtDate(p)}</p>
       <div class="pmeta"><span class="ptype">${TYPE_LABEL[p.type]}</span><span class="badge ${p.status}">${STATUS[p.status]}</span>${chip(doiUrl(p.doi), 'DOI')}${chip(p.pdf, 'PDF')}${chip(p.code, 'Code')}</div>
     </div></article>`;
 
@@ -91,6 +94,41 @@
       || b.dkey - a.dkey || a.title.toLowerCase().localeCompare(b.title.toLowerCase()) || a.i - b.i);
   };
 
+  // <date-helpers>
+  // Date column format: dd-mm-yyyy. The year is required (papers without a year are hidden); day and month are optional.
+  // Also understands 03-2026, 2026, 2026-03-15, "15 Mar 2026" and real Excel date cells (serial numbers).
+  const parseDate = v => {
+    v = txt(v);
+    if (/^\d+(\.\d+)?$/.test(v) && parseFloat(v) > 2100) {                          // Excel date cell
+      const dt = new Date(Math.floor(parseFloat(v) - 25569) * 864e5);
+      return { year: dt.getUTCFullYear(), month: dt.getUTCMonth() + 1, day: dt.getUTCDate() };
+    }
+    const t = v.replace(/(\d)(st|nd|rd|th)\b/gi, '$1').split(/[^0-9a-z]+/i).filter(Boolean);
+    const yi = t.findIndex(x => /^(19|20)\d{2}$/.test(x));
+    if (yi < 0) return { year: 0, month: 0, day: 0 };
+    const rest = t.filter((_, i) => i !== yi), mi = rest.findIndex(x => /^[a-z]{3,}$/i.test(x) && MONTHS.includes(x.slice(0, 3).toLowerCase()));
+    const nums = rest.filter(x => /^\d{1,2}$/.test(x)).map(Number);
+    let month = 0, day = 0;
+    if (mi >= 0) { month = MONTHS.indexOf(rest[mi].slice(0, 3).toLowerCase()) + 1; day = nums[0] || 0; }
+    else if (yi === 0) { month = nums[0] || 0; day = nums[1] || 0; }                 // 2026-03-15
+    else if (nums.length > 1) {                                                       // 15-03-2026 (03-15-2026 is also understood)
+      day = nums[0]; month = nums[1];
+      if (month > 12 && day <= 12) [day, month] = [month, day];
+    }
+    else if (nums.length === 1) month = nums[0];                                      // 03-2026
+    if (month < 1 || month > 12) month = day = 0;
+    if (day < 1 || day > 31) day = 0;
+    return { year: +t[yi], month, day };
+  };
+  const pad = n => String(n).padStart(2, '0');
+  const fmtDate = p => [p.day && pad(p.day), p.month && pad(p.month), p.year].filter(Boolean).join('-');
+  // A real Excel date cell: show only the parts its number format shows ("mmm-yy" -> month and year, "yyyy" -> year)
+  const dateCellText = c => {
+    const dt = new Date(Math.floor(c.v - 25569) * 864e5), z = String(c.z || ''), full = !z || /general/i.test(z);
+    return [full || /d/i.test(z) ? pad(dt.getUTCDate()) : '', full || /m/i.test(z) ? pad(dt.getUTCMonth() + 1) : '', dt.getUTCFullYear()].filter(Boolean).join('-');
+  };
+  // </date-helpers>
+
   let PUBS = [], pubView = 'year';
   const drawPubs = () => {
     const sec = (title, items, open) => `<details class="sem"${open ? ' open' : ''}><summary><span>${title}</span><em>${items.length}</em></summary><div class="plist">${
@@ -102,8 +140,11 @@
     $$('.seg button').forEach(b => b.classList.toggle('on', b.dataset.view === pubView));
   };
   const renderPubs = rows => {
-    PUBS = rows.map(row).filter(r => r.title).map((r, i) => ({ ...r, i, type: typeOf(r.type), status: statusOf(r.status),
-      year: parseInt(r.year, 10) || 0, month: monthOf(r.month), day: parseInt(r.day, 10) || 0, link: (r['link id'] || '').toLowerCase() }));
+    const all = rows.map(row).filter(r => r.title).map((r, i) => ({ ...r, i, type: typeOf(r.type), status: statusOf(r.status),
+      ...parseDate(r.date || [r.day, r.month, r.year].filter(Boolean).join('-')),    // the old Year/Month/Day columns still work
+      link: (r['link id'] || '').toLowerCase() }));
+    all.filter(p => !p.year).forEach(p => console.warn('Hidden (no year in the Date column): ' + p.title));
+    PUBS = all.filter(p => p.year);
     PUBS.sort((a, b) => b.year - a.year || b.month - a.month || b.day - a.day || a.i - b.i);
     PUBS.forEach(p => { p.dkey = p.year * 10000 + p.month * 100 + p.day; });
     clusterVenues(PUBS);
@@ -155,12 +196,25 @@
   const showWb = wb => {
     const rows = name => {
       const n = wb.SheetNames.find(s => s.trim().toLowerCase() === name.toLowerCase());
-      return n ? XLSX.utils.sheet_to_json(wb.Sheets[n], { defval: '' }) : [];
+      if (!n) return [];
+      const ws = wb.Sheets[n], out = XLSX.utils.sheet_to_json(ws, { defval: '', blankrows: true });
+      if (!ws['!ref']) return out;
+      // Real Excel dates: rewrite them as text that follows the cell's own format (dd-mm-yyyy, mm-yyyy or yyyy)
+      const rg = XLSX.utils.decode_range(ws['!ref']);
+      for (let c = rg.s.c; c <= rg.e.c; c++) {
+        const hd = ws[XLSX.utils.encode_cell({ r: rg.s.r, c })];
+        if (!hd || !/^date$/i.test(txt(hd.v))) continue;
+        out.forEach((row, i) => {
+          const cell = ws[XLSX.utils.encode_cell({ r: rg.s.r + 1 + i, c })];
+          if (cell && cell.t === 'n' && cell.v > 2100) row[txt(hd.v)] = dateCellText(cell);
+        });
+      }
+      return out;
     };
     renderPubs(rows('Publications'));
     renderProjects(rows('Projects'));
   };
-  const readB64 = b64 => showWb(XLSX.read(b64, { type: 'base64' }));   // used only by the preview build
+  const readB64 = b64 => showWb(XLSX.read(b64, { type: 'base64', cellNF: true }));   // used only by the preview build
 
   // Opened from disk (file://): browsers block fetch, so offer a file picker for a local preview instead
   const localBar = () => {
@@ -170,7 +224,7 @@
     bar.innerHTML = '<label>Local preview: choose your database.xlsx <input type="file" accept=".xlsx"></label>';
     bar.querySelector('input').addEventListener('change', async e => {
       const f = e.target.files[0];
-      if (f) showWb(XLSX.read(await f.arrayBuffer(), { type: 'array' }));
+      if (f) showWb(XLSX.read(await f.arrayBuffer(), { type: 'array', cellNF: true }));
     });
     document.body.appendChild(bar);
   };
@@ -182,7 +236,7 @@
       if (window.DB_BASE64) return readB64(window.DB_BASE64);
       const res = await fetch(DB_FILE + '?v=' + Date.now());
       if (!res.ok) throw new Error('HTTP ' + res.status);
-      showWb(XLSX.read(await res.arrayBuffer(), { type: 'array' }));
+      showWb(XLSX.read(await res.arrayBuffer(), { type: 'array', cellNF: true }));
     } catch (err) {
       console.error(err);
       if (location.protocol === 'file:' && window.XLSX) {

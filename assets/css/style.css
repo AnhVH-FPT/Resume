@@ -82,6 +82,9 @@ h1{font-size:clamp(2.8rem,7vw,4.4rem);line-height:1.02;font-weight:700;letter-sp
 .sem summary em{font:500 .8rem 'IBM Plex Sans',sans-serif;font-style:normal;background:var(--soft);color:var(--brand);padding:1px 10px;border-radius:99px}
 .now{font:600 .75rem 'IBM Plex Sans',sans-serif;background:#1b4dff;color:#fff;padding:1px 10px;border-radius:99px}
 .sem .projects{padding:6px 0 30px}
+.courses{list-style:none;display:grid;gap:12px;margin-top:14px;border-left:2px solid var(--line);padding-left:24px}
+.courses li{position:relative;font-size:1.05rem;font-weight:500}
+.courses li::before{content:"";position:absolute;left:-31px;top:10px;width:10px;height:10px;border-radius:50%;background:var(--brand)}
 .plist{padding:0 0 26px}
 .plist .pub:first-child,.plist .empty:first-child{border-top:0}
 a.badge{text-decoration:none}a.badge:hover{text-decoration:underline}
